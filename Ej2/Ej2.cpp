@@ -99,7 +99,7 @@ void InsertaSubLista(NodoSub*&SubLista,Importes Dato)
     Nuevo->Info = Dato;
     Aux = SubLista;
 
-    while(Aux != NULL && Aux->Info.Importe < Dato.Importe)
+    while(Aux != NULL && Aux->Info.Importe > Dato.Importe)
     {
         Antecesor = Aux;
         Aux = Aux->Sgte;

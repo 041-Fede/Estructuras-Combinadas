@@ -14,36 +14,24 @@ struct CobranzasDelArchivo
     int CodDeCliente,NroDeCuota;
 };
 
-struct Cuotas
-{
-    int NroDeCuota;
-};
-
-struct NodoSub
-{
-    Cuotas Info;
-    NodoSub *Sgte;
-};
-
 struct Cliente
 {
     int CodDeCliente;
-    NodoSub *ListaDeCuotas;
 };
 
 struct Nodo
 {
     Cliente Info;
+    Cuotas[12];
     Nodo *Sgte;
 };
 
-void CargaDeDatos(FILE*ArchivoA,Nodo*&Lista);
-void InsertaSubLista(NodoSub*&ListaDeCuotas,Cliente Dato);
-Nodo *BuscarInsertar(Nodo*&Lista,Cliente Dato);
+void CargaDeDatos(FILE *ArchivoA,Nodo *&Lista);
+void BuscarInsertar(Nodo *&Lista,Cliente Dato,int NroDeCuota);
+void MostrarListadoDeDeudores(Nodo *Lista);
 
 int main()
 {
-    Nodo *Lista = NULL;
     FILE *ArchivoA = fopen("Cobranzas.dat","rb");
 
     if(ArchivoA == NULL)
@@ -52,11 +40,13 @@ int main()
     }
     else
     {
+        Nodo *Lista = NULL;
+
         CargaDeDatos(ArchivoA,Lista);
 
         cout << "Listado de aquellos que adeudan cuotas: " << endl;
 
-        MostrarListado(Lista);
+        MostrarListadoDeDeudores(Lista);
 
         cout << "---------------------------------" << endl;
     }
@@ -64,11 +54,10 @@ int main()
     return 0;
 }
 
-void CargaDeDatos(FILE*ArchivoA,Nodo*&Lista)
+void CargaDeDatos(FILE *ArchivoA,Nodo *&Lista)
 {
     CobranzasDelArchivo C;
     Cliente AuxCliente;
-    Cuotas AuxCoutas;
     Nodo *Aux;
 
     fread(&C,sizeof(CobranzasDelArchivo),1,ArchivoA);
@@ -76,42 +65,13 @@ void CargaDeDatos(FILE*ArchivoA,Nodo*&Lista)
     while(!feof(ArchivoA))
     {
         AuxCliente.CodDeCliente = C.CodDeCliente;
-        AuxCoutas.NroDeCuota = C.NroDeCuota;
-        AuxCliente.ListaDeCuotas = NULL;
-        Aux = BuscarInsertar(Lista,AuxCliente);
-
-        InsertarCuota(Aux->Info.ListaDeCuotas,AuxCoutas);
+        Aux = BuscarInsertar(Lista,AuxCliente,C.NroDeCuota);
 
         fread(&C,sizeof(CobranzasDelArchivo),1,ArchivoA);
     }
 }
 
-void InsertaSubLista(NodoSub*&ListaDeCuotas,Cliente Dato)
-{
-    NodoSub *Nuevo,*Antecesor,*Aux;
-    Nuevo = new NodoSub;
-    Nuevo->Info = Dato;
-    Aux = ListaDeCuotas;
-
-    while(Aux != NULL && Aux->Info.NroDeCuota < Dato.NroDeCuota)
-    {
-        Antecesor = Aux;
-        Aux = Aux->Sgte;
-    }
-
-    Nuevo->Sgte = Aux;
-
-    if(Aux != ListaDeCuotas)
-    {
-        Antecesor->Sgte = Nuevo;
-    }
-    else
-    {
-        ListaDeCuotas = Nuevo;
-    }
-}
-
-Nodo *BuscarInsertar(Nodo*&Lista,Cliente Dato)
+void BuscarInsertar(Nodo *&Lista,Cliente Dato,int NroDeCuota)
 {
     Nodo *Aux,*Antecesor;
     Aux = Lista;
@@ -124,13 +84,25 @@ Nodo *BuscarInsertar(Nodo*&Lista,Cliente Dato)
 
     if(Aux != NULL && Dato.CodDeCliente == Aux->Info.CodDeCliente)
     {
-        return Aux;
+        Aux->Cuotas[NroDeCuota - 1] = true;
     }
     else
     {
         Nodo *Nuevo = new Nodo;
         Nuevo->Info = Dato;
         Nuevo->Sgte = Aux;
+
+        for(int i = 0; i < 11; i++)
+        {
+            if(NroDeCuota == i + 1)
+            {
+                Nuevo->Cuotas[i] = true;
+            }
+            else
+            {
+                Nuevo->Cuotas[i] = false;
+            }
+        }
 
         if(Aux != Lista)
         {
@@ -140,7 +112,25 @@ Nodo *BuscarInsertar(Nodo*&Lista,Cliente Dato)
         {
             Lista = Nuevo;
         }
+    }
+}
 
-        return Nuevo;
+void MostrarListadoDeDeudores(Nodo *Lista)
+{
+    Nodo *Aux;
+
+    while(Aux != NULL)
+    {
+        cout << "Codigo de cliente: " << Aux->Info.CodDeCliente << endl;
+
+        for(int i = 0; i < 11; i++)
+        {
+            if(Aux->Cuotas[i] != true)
+            {
+                cout << "Nro de cuota: " << i + 1 << endl;
+            }
+        }
+
+        Aux = Aux->Sgte;
     }
 }

@@ -22,7 +22,7 @@ struct Cliente
 struct Nodo
 {
     Cliente Info;
-    Cuotas[12];
+    bool Cuotas[12];
     Nodo *Sgte;
 };
 
@@ -44,11 +44,9 @@ int main()
 
         CargaDeDatos(ArchivoA,Lista);
 
-        cout << "Listado de aquellos que adeudan cuotas: " << endl;
+        cout << "Listado por codigo de cliente con aquellas cuotas que adeudan: " << endl;
 
         MostrarListadoDeDeudores(Lista);
-
-        cout << "---------------------------------" << endl;
     }
 
     return 0;
@@ -58,14 +56,13 @@ void CargaDeDatos(FILE *ArchivoA,Nodo *&Lista)
 {
     CobranzasDelArchivo C;
     Cliente AuxCliente;
-    Nodo *Aux;
 
     fread(&C,sizeof(CobranzasDelArchivo),1,ArchivoA);
 
     while(!feof(ArchivoA))
     {
         AuxCliente.CodDeCliente = C.CodDeCliente;
-        Aux = BuscarInsertar(Lista,AuxCliente,C.NroDeCuota);
+        BuscarInsertar(Lista,AuxCliente,C.NroDeCuota);
 
         fread(&C,sizeof(CobranzasDelArchivo),1,ArchivoA);
     }
@@ -117,7 +114,7 @@ void BuscarInsertar(Nodo *&Lista,Cliente Dato,int NroDeCuota)
 
 void MostrarListadoDeDeudores(Nodo *Lista)
 {
-    Nodo *Aux;
+    Nodo *Aux = Lista;
 
     while(Aux != NULL)
     {
@@ -125,11 +122,13 @@ void MostrarListadoDeDeudores(Nodo *Lista)
 
         for(int i = 0; i < 11; i++)
         {
-            if(Aux->Cuotas[i] != true)
+            if(Aux->Cuotas[i] == false)
             {
                 cout << "Nro de cuota: " << i + 1 << endl;
             }
         }
+
+        cout << "---------------------------------" << endl;
 
         Aux = Aux->Sgte;
     }

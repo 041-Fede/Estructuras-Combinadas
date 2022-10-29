@@ -62,8 +62,8 @@ void CargaDeDatos(FILE *ArchivoA,Nodo *&Lista)
     while(!feof(ArchivoA))
     {
         AuxCliente.CodDeCliente = C.CodDeCliente;
+        
         BuscarInsertar(Lista,AuxCliente,C.NroDeCuota);
-
         fread(&C,sizeof(CobranzasDelArchivo),1,ArchivoA);
     }
 }

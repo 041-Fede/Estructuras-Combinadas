@@ -15,58 +15,45 @@ b) Asignar los postulantes a los departamentos según el orden de llegada y la c
 
 using namespace std;
 
-struct EmpleadoDeArchivo
+struct EmpleadoDelArchivo
 {
     int NroDeLegajo,Dni,CodDeDepartamentoActual;
     char Nombre[20];
 };
 
-struct VacanteDeArchivo
-{
-    int CodDeDepartamento,CantDeVacantes;
-};
-
-struct PostulanteDeArchivo
+struct PostulanteDelArchivo
 {
     int NroDeLegajo,CodDeDepartamento;
 };
 
-struct Empleado
+struct VacantesDelArchivo
 {
-    int NroDeLegajo;
+    int CodDeDepartamento,CantDeVacantes;
 };
 
-struct NodoSub
+struct NodoColaDeEspera
 {
-    Empleado Info;
-    NodoSub *Sgte;
+    int Info;
+    NodoColaDeEspera *Sgte;
 };
 
-struct Departamento
+struct ColaDeEspera
 {
-    int CodDeDepartamento;
-    NodoSub *ListaDeLlegada;
+    int CantDeVacantes;
+    NodoColaDeEspera *Primero;
+    NodoColaDeEspera *Ultimo;
 };
 
-struct Nodo
-{
-    Departamento Info;
-    Nodo *Sgte;
-};
-
-void InicializarVector(int Vacantes[]);
-void CargaDeVacantes(FILE *ArchivoB,int Vacantes[]);
-void CargaDePostulantes(FILE *ArchivoC,Nodo *&ListaDePostulantes);
-void InsertarEmpleado(NodoSub *&ListaDeLlegada,Empleado Dato);
-void MostrarListado(FILE *ArchivoA,Nodo *ListaDePostulantes);
-void Desencolar(NodoSub *&ListaDeLlegada);
-void AsignacionDeDepartamento(FILE *ArchivoA,Nodo *ListaDePostulantes,int Vacantes[]);
-int BusquedaSecuencial(FILE *ArchivoA,int NroDeLegajo,EmpleadoDeArchivo &E);
-Nodo *BuscarInsertar(Nodo *&ListaDePostulantes,Departamento Dato);
+void InicializarCola(ColaDeEspera Departamento[]);
+void CargaDeVacantes(FILE *ArchivoB,ColaDeEspera Departamento[]);
+void CargaDePostulantes(FILE *ArchivoC,ColaDeEspera Departamento[]);
+void InsertarPorOrdenDeLlegada(NodoColaDeEspera *&Primero,NodoColaDeEspera *&Ultimo,int Dato);
+void MostrarListado(FILE *ArchivoA,ColaDeEspera Departamento[]);
+void Desencolar(NodoColaDeEspera *&Primero,NodoColaDeEspera *&Ultimo,int &Dato);
+int BusquedaSecuencial(FILE *ArchivoA,int NroDeLegajo,EmpleadoDelArchivo &E);
 
 int main()
 {
-    Nodo *ListaDePostulantes = NULL;
     FILE *ArchivoA = fopen("Empleados.dat","rb+");
     FILE *ArchivoB = fopen("Vacantes.dat","rb");
     FILE *ArchivoC = fopen("Postulantes.dat","rb");
@@ -77,185 +64,146 @@ int main()
     }
     else
     {
-        int Vacantes[50];
+        ColaDeEspera Departamento[50];
 
-        InicializarVector(Vacantes);
+        InicializarCola(Departamento);
+        CargaDeVacantes(ArchivoB,Departamento);
+        CargaDePostulantes(ArchivoC,Departamento);
 
-        CargaDeVacantes(ArchivoB,Vacantes);
+        cout << "Listado ordenado por codigo de departamento con todos los empleados postulados al mismo por orden de llegada:" << endl;
 
-        CargaDePostulantes(ArchivoC,ListaDePostulantes);
-
-        cout << "Listado ordenado por codigo de departamento con todos los empleados postulados al mismo por orden de llegada: " << endl;
-
-        MostrarListado(ArchivoA,ListaDePostulantes);
-
-        AsignacionDeDepartamento(ArchivoA,ListaDePostulantes,Vacantes);
-
+        MostrarListado(ArchivoA,Departamento);
+        fclose(ArchivoA);
+        fclose(ArchivoB);
+        fclose(ArchivoC);
     }
 
     return 0;
 }
 
-void InicializarVector(int Vacantes[])
+void InicializarCola(ColaDeEspera Departamento[])
 {
     for(int i = 0; i < 50; i++)
     {
-        Vacantes[i] = 0;
+        Departamento[i].Primero = NULL;
+        Departamento[i].Ultimo = NULL;
+        Departamento[i].CantDeVacantes = 0;
     }
 }
 
-void CargaDeVacantes(FILE *ArchivoB,int Vacantes[])
+void CargaDeVacantes(FILE *ArchivoB,ColaDeEspera Departamento[])
 {
-    VacanteDeArchivo V;
+    VacantesDelArchivo V;
 
-    fread(&V,sizeof(VacanteDeArchivo),1,ArchivoB);
+    fread(&V,sizeof(VacantesDelArchivo),1,ArchivoB);
 
     while(!feof(ArchivoB))
     {
-        Vacantes[V.CodDeDepartamento - 1] = V.CantDeVacantes;
+        Departamento[V.CodDeDepartamento - 1].CantDeVacantes = V.CantDeVacantes;
 
-        fread(&V,sizeof(VacanteDeArchivo),1,ArchivoB);
+        fread(&V,sizeof(VacantesDelArchivo),1,ArchivoB);
     }
+
 }
 
-void CargaDePostulantes(FILE *ArchivoC,Nodo *&ListaDePostulantes)
+void CargaDePostulantes(FILE *ArchivoC,ColaDeEspera Departamento[])
 {
-    PostulanteDeArchivo P;
-    Departamento D;
-    Empleado E;
-    Nodo *Aux;
+    PostulanteDelArchivo P;
 
-    fread(&P,sizeof(PostulanteDeArchivo),1,ArchivoC);
+    fread(&P,sizeof(PostulanteDelArchivo),1,ArchivoC);
 
     while(!feof(ArchivoC))
     {
-        D.CodDeDepartamento = P.CodDeDepartamento;
-        D.ListaDeLlegada = NULL;
-        E.NroDeLegajo = P.NroDeLegajo;
-        Aux = BuscarInsertar(ListaDePostulantes,D);
+        InsertarPorOrdenDeLlegada(Departamento[P.CodDeDepartamento - 1].Primero,Departamento[P.CodDeDepartamento - 1].Ultimo,P.NroDeLegajo);
 
-        InsertarEmpleado(Aux->Info.ListaDeLlegada,E);
-
-        fread(&P,sizeof(PostulanteDeArchivo),1,ArchivoC);
+        fread(&P,sizeof(PostulanteDelArchivo),1,ArchivoC);
     }
-
 }
 
-void InsertarEmpleado(NodoSub *&ListaDeLlegada,Empleado Dato)
+void InsertarPorOrdenDeLlegada(NodoColaDeEspera *&Primero,NodoColaDeEspera *&Ultimo,int Dato)
 {
-    NodoSub *Aux;
-    NodoSub *Nuevo = new NodoSub;
-    Nuevo->Info = Dato;
-    Nuevo->Sgte = NULL;
+    NodoColaDeEspera *Aux = new NodoColaDeEspera;
+    Aux->Info = Dato;
+    Aux->Sgte = NULL;
 
-    if(ListaDeLlegada != NULL)
+    if(Ultimo != NULL)
     {
-        Aux = ListaDeLlegada;
-
-        while(Aux->Sgte != NULL)
-        {
-            Aux = Aux->Sgte;
-        }
-
-        Aux->Sgte = Nuevo;
+        Ultimo->Sgte = Aux;
     }
     else
     {
-        ListaDeLlegada = Nuevo;
+        Primero = Aux;
     }
+
+    Ultimo = Aux;
 }
 
-void MostrarListado(FILE *ArchivoA,Nodo *ListaDePostulantes)
+void MostrarListado(FILE *ArchivoA,ColaDeEspera Departamento[])
 {
-    int i;
-    EmpleadoDeArchivo E;
-    Nodo *Aux;
-    NodoSub *AuxSub;
-    Aux = ListaDePostulantes;
+    int NroDeLegajo,Pos;
+    EmpleadoDelArchivo E;
 
-    while(Aux != NULL)
+    for(int i = 0; i < 50; i++)
     {
-        cout << "Codigo de departamento: " << Aux->Info.CodDeDepartamento << endl;
+        cout << "Codigo de departamento: " << i + 1 << endl;
 
-        AuxSub = Aux->Info.ListaDeLlegada;
-
-        while(AuxSub != NULL)
+        if(Departamento[i].Primero == NULL)
         {
-            i = BusquedaSecuencial(ArchivoA,AuxSub->Info.NroDeLegajo,E);
-
-            if(i != -1)
+            cout << "NO HUBO NINGUN POSTULANTE!" << endl;
+        }
+        else
+        {
+              while(Departamento[i].Primero != NULL)
             {
-                cout << "Nro de legajo: " << E.Nombre << " - " << "Dni: " << E.Dni << " - " << "Nombre: " << E.Nombre << endl;
+                Desencolar(Departamento[i].Primero,Departamento[i].Ultimo,NroDeLegajo);
+
+                Pos = BusquedaSecuencial(ArchivoA,NroDeLegajo,E);
+
+                cout << "Nro de legado del empleado: " << NroDeLegajo << " - " << "Nombre del empleado: " << E.Nombre << " - " << "Dni del empleado: " << E.Dni << endl;
+
+                if(Departamento[i].CantDeVacantes > 0)
+                {
+                    fseek(ArchivoA,Pos*sizeof(EmpleadoDelArchivo),SEEK_SET);
+
+                    E.CodDeDepartamentoActual = i + 1;
+                    Departamento[i].CantDeVacantes--;
+
+                    fwrite(&E,sizeof(EmpleadoDelArchivo),1,ArchivoA);
+                }
+
+                fseek(ArchivoA,0,SEEK_SET);
             }
-
-            fseek(ArchivoA,sizeof(EmpleadoDeArchivo),SEEK_SET);
-
-            AuxSub = AuxSub->Sgte;
         }
 
         cout << "---------------------------------" << endl;
-
-        Aux = Aux->Sgte;
     }
 }
 
-void AsignacionDeDepartamento(FILE *ArchivoA,Nodo *ListaDePostulantes,int Vacantes[])
+void Desencolar(NodoColaDeEspera *&Primero,NodoColaDeEspera *&Ultimo,int &Dato)
 {
-    int Pos;
-    EmpleadoDeArchivo E;
-    Nodo *Aux;
-    NodoSub *AuxSub;
-    Aux = ListaDePostulantes;
-
-    while(Aux != NULL)
-    {
-        AuxSub = Aux->Info.ListaDeLlegada;
-
-        while(AuxSub != NULL)
-        {
-            Pos = BusquedaSecuencial(ArchivoA,AuxSub->Info.NroDeLegajo,E);
-
-            if(Pos != -1)
-            {
-                if(Vacantes[Aux->Info.CodDeDepartamento - 1] > 0)
-                {
-                    Desencolar(AuxSub);
-
-                    Vacantes[Aux->Info.CodDeDepartamento - 1] = Vacantes[Aux->Info.CodDeDepartamento - 1] - 1;
-
-                    E.CodDeDepartamentoActual = Aux->Info.CodDeDepartamento;
-
-                    fseek(ArchivoA,Pos*sizeof(EmpleadoDeArchivo),SEEK_SET);
-                    fwrite(&E,sizeof(EmpleadoDeArchivo),1,ArchivoA);
-                }
-            }
-
-            fseek(ArchivoA,sizeof(EmpleadoDeArchivo),SEEK_SET);
-        }
-
-        Aux = Aux->Sgte;
-    }
-}
-
-void Desencolar(NodoSub *&ListaDeLlegada)
-{
-    NodoSub *Aux = ListaDeLlegada;
-    ListaDeLlegada = Aux->Sgte;
+    NodoColaDeEspera *Aux = Primero;
+    Dato = Aux->Info;
+    Primero = Aux->Sgte;
 
     delete Aux;
+
+    if(Primero == NULL)
+    {
+        Ultimo = NULL;
+    }
 }
 
-int BusquedaSecuencial(FILE *ArchivoA,int NroDeLegajo,EmpleadoDeArchivo &E) // Se puede aplicar una Busqueda binaria, ya que "ArchivoA" esta ordenado
+int BusquedaSecuencial(FILE *ArchivoA,int NroDeLegajo,EmpleadoDelArchivo &E)
 {
     int i = 0;
 
-    fread(&E,sizeof(EmpleadoDeArchivo),1,ArchivoA);
+    fread(&E,sizeof(EmpleadoDelArchivo),1,ArchivoA);
 
     while(!feof(ArchivoA) && E.NroDeLegajo != NroDeLegajo)
     {
         i++;
 
-        fread(&E,sizeof(EmpleadoDeArchivo),1,ArchivoA);
+        fread(&E,sizeof(EmpleadoDelArchivo),1,ArchivoA);
     }
 
     if(feof(ArchivoA))
@@ -268,36 +216,3 @@ int BusquedaSecuencial(FILE *ArchivoA,int NroDeLegajo,EmpleadoDeArchivo &E) // S
     }
 }
 
-Nodo *BuscarInsertar(Nodo *&ListaDePostulantes,Departamento Dato)
-{
-    Nodo *Aux,*Antecesor;
-    Aux = ListaDePostulantes;
-
-    while(Aux != NULL && Aux->Info.CodDeDepartamento < Dato.CodDeDepartamento)
-    {
-        Antecesor = Aux;
-        Aux = Aux->Sgte;
-    }
-
-    if(Aux != NULL && Dato.CodDeDepartamento == Aux->Info.CodDeDepartamento)
-    {
-        return Aux;
-    }
-    else
-    {
-        Nodo *Nuevo = new Nodo;
-        Nuevo->Info = Dato;
-        Nuevo->Sgte = Aux;
-
-        if(Aux != ListaDePostulantes)
-        {
-            Antecesor->Sgte = Nuevo;
-        }
-        else
-        {
-            ListaDePostulantes = Nuevo;
-        }
-
-        return Nuevo;
-    }
-}

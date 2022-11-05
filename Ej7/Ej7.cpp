@@ -73,9 +73,6 @@ int main()
         cout << "Listado ordenado por codigo de departamento con todos los empleados postulados al mismo por orden de llegada:" << endl;
 
         MostrarListado(ArchivoA,Departamento);
-        fclose(ArchivoA);
-        fclose(ArchivoB);
-        fclose(ArchivoC);
     }
 
     return 0;
@@ -104,6 +101,7 @@ void CargaDeVacantes(FILE *ArchivoB,ColaDeEspera Departamento[])
         fread(&V,sizeof(VacantesDelArchivo),1,ArchivoB);
     }
 
+    fclose(ArchivoB);
 }
 
 void CargaDePostulantes(FILE *ArchivoC,ColaDeEspera Departamento[])
@@ -115,9 +113,10 @@ void CargaDePostulantes(FILE *ArchivoC,ColaDeEspera Departamento[])
     while(!feof(ArchivoC))
     {
         InsertarPorOrdenDeLlegada(Departamento[P.CodDeDepartamento - 1].Primero,Departamento[P.CodDeDepartamento - 1].Ultimo,P.NroDeLegajo);
-
         fread(&P,sizeof(PostulanteDelArchivo),1,ArchivoC);
     }
+
+    fclose(ArchivoC);
 }
 
 void InsertarPorOrdenDeLlegada(NodoColaDeEspera *&Primero,NodoColaDeEspera *&Ultimo,int Dato)
@@ -158,25 +157,28 @@ void MostrarListado(FILE *ArchivoA,ColaDeEspera Departamento[])
                 Desencolar(Departamento[i].Primero,Departamento[i].Ultimo,NroDeLegajo);
 
                 Pos = BusquedaSecuencial(ArchivoA,NroDeLegajo,E);
-
-                cout << "Nro de legado del empleado: " << NroDeLegajo << " - " << "Nombre del empleado: " << E.Nombre << " - " << "Dni del empleado: " << E.Dni << endl;
-
-                if(Departamento[i].CantDeVacantes > 0)
+                
+                if(Pos != -1)
                 {
-                    fseek(ArchivoA,Pos*sizeof(EmpleadoDelArchivo),SEEK_SET);
+                    cout << "Nro de legado del empleado: " << NroDeLegajo << " - " << "Nombre del empleado: " << E.Nombre << " - " << "Dni del empleado: " << E.Dni << endl;
 
-                    E.CodDeDepartamentoActual = i + 1;
-                    Departamento[i].CantDeVacantes--;
+                    if(Departamento[i].CantDeVacantes > 0)
+                    {
+                        fseek(ArchivoA,Pos*sizeof(EmpleadoDelArchivo),SEEK_SET);
 
-                    fwrite(&E,sizeof(EmpleadoDelArchivo),1,ArchivoA);
+                        E.CodDeDepartamentoActual = i + 1;
+                        Departamento[i].CantDeVacantes--;
+
+                        fwrite(&E,sizeof(EmpleadoDelArchivo),1,ArchivoA);
+                    }
                 }
 
                 fseek(ArchivoA,0,SEEK_SET);
             }
         }
-
         cout << "---------------------------------" << endl;
     }
+    fclose(ArchivoA);
 }
 
 void Desencolar(NodoColaDeEspera *&Primero,NodoColaDeEspera *&Ultimo,int &Dato)
@@ -184,9 +186,7 @@ void Desencolar(NodoColaDeEspera *&Primero,NodoColaDeEspera *&Ultimo,int &Dato)
     NodoColaDeEspera *Aux = Primero;
     Dato = Aux->Info;
     Primero = Aux->Sgte;
-
     delete Aux;
-
     if(Primero == NULL)
     {
         Ultimo = NULL;
@@ -196,16 +196,13 @@ void Desencolar(NodoColaDeEspera *&Primero,NodoColaDeEspera *&Ultimo,int &Dato)
 int BusquedaSecuencial(FILE *ArchivoA,int NroDeLegajo,EmpleadoDelArchivo &E)
 {
     int i = 0;
-
     fread(&E,sizeof(EmpleadoDelArchivo),1,ArchivoA);
-
     while(!feof(ArchivoA) && E.NroDeLegajo != NroDeLegajo)
     {
         i++;
 
         fread(&E,sizeof(EmpleadoDelArchivo),1,ArchivoA);
     }
-
     if(feof(ArchivoA))
     {
         return -1;
@@ -215,4 +212,3 @@ int BusquedaSecuencial(FILE *ArchivoA,int NroDeLegajo,EmpleadoDelArchivo &E)
         return i;
     }
 }
-

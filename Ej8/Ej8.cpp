@@ -178,8 +178,6 @@ void Apareo(FILE *ArchivoA,FILE *ArchivoC,NodoLibro *ListaDelibros,NodoNacionali
         }
 
         N.ListaDeAutores = NULL;
-        N.CantTotalDeAutores = 0;
-        A.CantTotalDeTitulos = 1;
         AuxN = BuscarInsertarNacionalidad(ListaPorNacionalidad,N);
 
         BuscarInsertarAutor(AuxN,AuxN->Info.ListaDeAutores,A);
@@ -187,10 +185,9 @@ void Apareo(FILE *ArchivoA,FILE *ArchivoC,NodoLibro *ListaDelibros,NodoNacionali
 
     while(!feof(ArchivoA))
     {
+
         N.NroDeNacionalidad = L.Nacionalidad;
         N.ListaDeAutores = NULL;
-        N.CantTotalDeAutores = 0;
-        A.CantTotalDeTitulos = 1;
 
         strcpy(A.ApellidoDelAutor,L.ApellidoDelAutor);
 
@@ -207,8 +204,6 @@ void Apareo(FILE *ArchivoA,FILE *ArchivoC,NodoLibro *ListaDelibros,NodoNacionali
     {
         N.NroDeNacionalidad = Aux->Info.Nacionalidad;
         N.ListaDeAutores = NULL;
-        N.CantTotalDeAutores = 0;
-        A.CantTotalDeTitulos = 1;
 
         strcpy(A.ApellidoDelAutor,Aux->Info.ApellidoDelAutor);
 
@@ -243,6 +238,7 @@ void BuscarInsertarAutor(NodoNacionalidad *&ListaPorNacionalidad,NodoAutor *&Lis
     {
         NodoAutor *Nuevo = new NodoAutor;
         ListaPorNacionalidad->Info.CantTotalDeAutores += 1;
+        Dato.CantDeEjemplares = 1;
         Nuevo->Info = Dato;
         Nuevo->Sgte = Aux;
 
@@ -345,6 +341,7 @@ NodoNacionalidad *BuscarInsertarNacionalidad(NodoNacionalidad *&ListaPorNacional
     else
     {
         NodoNacionalidad *Nuevo = new NodoNacionalidad;
+        Dato.CantTotalDeAutores = 1;
         Nuevo->Info = Dato;
         Nuevo->Sgte = Aux;
 

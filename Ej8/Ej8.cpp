@@ -187,7 +187,6 @@ void Apareo(FILE *ArchivoA,FILE *ArchivoC,NodoLibro *ListaDelibros,NodoNacionali
 
     while(!feof(ArchivoA))
     {
-
         N.NroDeNacionalidad = L.Nacionalidad;
         N.ListaDeAutores = NULL;
         N.CantTotalDeAutores = 0;

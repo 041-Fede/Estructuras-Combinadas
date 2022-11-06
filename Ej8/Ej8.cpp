@@ -230,7 +230,7 @@ void BuscarInsertarAutor(NodoNacionalidad *&ListaPorNacionalidad,NodoAutor *&Lis
         Aux = Aux->Sgte;
     }
 
-    if(Aux != NULL && !strcmpi(Aux->Info.ApellidoDelAutor,Dato.ApellidoDelAutor))
+    if(Aux != NULL && strcmpi(Aux->Info.ApellidoDelAutor,Dato.ApellidoDelAutor) == 0)
     {
         Aux->Info.CantTotalDeTitulos++;
     }
@@ -238,7 +238,7 @@ void BuscarInsertarAutor(NodoNacionalidad *&ListaPorNacionalidad,NodoAutor *&Lis
     {
         NodoAutor *Nuevo = new NodoAutor;
         ListaPorNacionalidad->Info.CantTotalDeAutores += 1;
-        Dato.CantDeEjemplares = 1;
+        Dato.CantTotalDeTitulos = 1;
         Nuevo->Info = Dato;
         Nuevo->Sgte = Aux;
 
@@ -341,7 +341,7 @@ NodoNacionalidad *BuscarInsertarNacionalidad(NodoNacionalidad *&ListaPorNacional
     else
     {
         NodoNacionalidad *Nuevo = new NodoNacionalidad;
-        Dato.CantTotalDeAutores = 1;
+        Dato.CantTotalDeAutores = 0;
         Nuevo->Info = Dato;
         Nuevo->Sgte = Aux;
 
